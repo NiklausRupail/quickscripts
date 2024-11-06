@@ -12,3 +12,6 @@ node -v # should print `v22.11.0`
 
 # verifies the right npm version is in the environment
 npm -v # should print `10.9.0`
+
+# In case of npm not working fix MS Run Policy with
+# Set-ExecutionPolicy RemoteSigned
