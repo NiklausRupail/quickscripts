@@ -37,6 +37,27 @@ pkg_for() {
     esac
 }
 
+# Every package this script can make use of.
+ALL_PKGS=(lm-sensors smartmontools nvme-cli mesa-utils inxi btop htop \
+          iotop nethogs hdparm duf dmidecode lshw hwinfo speedtest-cli)
+
+# Install everything in one go.
+install_all() {
+    echo "${BOLD}${BLU}Installing all supported tools...${RST}"
+    echo "${DIM}Packages: ${ALL_PKGS[*]}${RST}"
+    echo
+    sudo apt update && sudo apt install -y "${ALL_PKGS[@]}"
+    local rc=$?
+    echo
+    if [[ $rc -eq 0 ]]; then
+        echo "${GRN}All packages installed.${RST}"
+        echo "${YLW}Tip: run 'sudo sensors-detect' once to enable temperature readings.${RST}"
+    else
+        echo "${RED}apt finished with errors (exit $rc).${RST}"
+    fi
+    return $rc
+}
+
 # Ensure a command exists; offer to install it if not. Returns 0 if usable.
 need() {
     local cmd="$1"
@@ -217,6 +238,7 @@ menu() {
     echo "  ${BOLD}11)${RST} Live monitor (btop/htop)"
     echo "  ${BOLD}12)${RST} Save full report to file"
     echo "   ${BOLD}a)${RST} Run ALL read-only checks"
+    echo "   ${BOLD}i)${RST} Install ALL tools"
     echo "   ${BOLD}q)${RST} Quit"
     echo
     read -rp "  ${CYN}Choose an option:${RST} " choice
@@ -225,6 +247,27 @@ menu() {
 run_all() {
     check_cpu; check_memory; check_disk_usage; check_gpu; check_board; check_summary; check_network
 }
+
+# ---------- command-line flags ----------
+usage() {
+    cat <<EOF
+${BOLD}sysinfo.sh${RST} - interactive system stats checker
+
+Usage: ./sysinfo.sh [OPTION]
+
+  ${BOLD}-i, --install${RST}    Install all supported tools, then exit
+  ${BOLD}-h, --help${RST}       Show this help and exit
+
+With no option, launches the interactive menu.
+EOF
+}
+
+case "${1:-}" in
+    -i|--install) install_all; exit $? ;;
+    -h|--help)    usage; exit 0 ;;
+    "")           ;;  # no args -> fall through to menu
+    *)            echo "${RED}Unknown option: $1${RST}"; echo; usage; exit 1 ;;
+esac
 
 # ---------- main loop ----------
 while true; do
@@ -243,6 +286,7 @@ while true; do
         11) check_monitor ;;
         12) save_report ;;
         a|A) run_all ;;
+        i|I) install_all; pause ;;
         q|Q) echo "Bye."; exit 0 ;;
         *)  echo "${RED}Invalid option.${RST}"; sleep 1 ;;
     esac
